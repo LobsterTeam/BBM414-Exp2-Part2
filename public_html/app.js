@@ -15,6 +15,7 @@ const Sx = 0.5, Sy = 0.5;
 var ninjaStarData = [];
 var angleInRadians = 0;
 var scaleMatrix = scaleNinjaStar(0.5, 0.5);
+var turnRight = true;
 
 function main() {
     const canvas = document.querySelector("#glCanvas");
@@ -30,9 +31,9 @@ function main() {
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
+    var type = gl.FLOAT;
+    var normalize = false;
+    var stride = 0;
     
     // DRAW TRIANGLES OF NINJA STAR
     ninjaStarTriangle(); 
@@ -49,13 +50,29 @@ function main() {
     gl.enableVertexAttribArray(gl.getAttribLocation(circleShader, "a_position"));
     var circleMatrix = gl.getUniformLocation(circleShader, 'u_matrix');
     
+    // ROTATION ANIMATION
     function drawScene () {
-        angleInRadians += 0.01;
+        console.log(angleInRadians);
+               
+        if (angleInRadians >= 0.78539816) {        // it is supposed to be 45
+            turnRight = false;
+            console.log("FALSE");
+        } else if (angleInRadians <= -0.78539816) {     // it is supposed to be -45
+            turnRight = true;
+            console.log("TRUE");
+        }
+        
+        if (turnRight) {
+            angleInRadians += 0.01;
+        } else {
+            angleInRadians -= 0.01;
+        }
+        
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         
         // MATRICES
         var rotationMatrix = rotateNinjaStar(angleInRadians);
-        var matrix = matrixMultiply(scaleMatrix, rotationMatrix);
+        var matrix = multiplyMatrices(scaleMatrix, rotationMatrix);
         
         // TRIANGLES
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
@@ -182,7 +199,7 @@ function changeAlphaOfTriangles () {
     
 }
 
-function matrixMultiply(a, b) {
+function multiplyMatrices(a, b) {
     var a00 = a[0*3+0];
     var a01 = a[0*3+1];
     var a02 = a[0*3+2];
