@@ -6,14 +6,14 @@
 
 const triangleVertexShader = `#version 300 es
 
-    in vec4 a_position;
+    in vec2 a_position;
     in vec3 a_color;
-
-    uniform mat4 u_matrix;
-
     out vec3 color;
+
+    uniform mat3 u_matrix;
+
     void main() {
-        gl_Position = u_matrix * a_position;
+        gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
         color = a_color;
     }
 `;
@@ -22,8 +22,8 @@ const triangleFragmentShader = `#version 300 es
 
     precision mediump float;
     in vec3 color;
-
     out vec4 o_color;
+    
     void main() {
         o_color = vec4(color,1.0);
     }
@@ -31,12 +31,12 @@ const triangleFragmentShader = `#version 300 es
 
 const circleVertexShader = `#version 300 es
 
-    in vec4 a_position;
+    in vec2 a_position;
 
-    uniform mat4 u_matrix;
+    uniform mat3 u_matrix;
 
     void main() {
-        gl_Position = u_matrix * a_position;
+        gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
     }
 `;
 

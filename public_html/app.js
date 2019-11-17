@@ -7,20 +7,16 @@
 
 // FIDAN SAMET 21727666
 // OGUZ BAKIR 21627007
+
 const triangleVertexNum = 12;
 const triangleFanNumber = 360;
-var ninjaStarData = [];
 const gray = vec3(64 / 255.0, 64 / 255.0, 64 / 255.0);
-const Sx = 0.5, Sy = 0.5, Sz = 0.5;
-const xformMatrix = new Float32Array([
-       Sx,   0.0,  0.0,  0.0,
-       0.0,  Sy,   0.0,  0.0,
-       0.0,  0.0,  Sz,   0.0,
-       0.0,  0.0,  0.0,  1.0  
-    ]);
-const rotateAxis = [0, 0, 1];
+const Sx = 0.5, Sy = 0.5;
+var ninjaStarData = [];
+var angleInRadians = 0;
+var scaleMatrix = scaleNinjaStar(0.5, 0.5);
 
-window.onload = function init() {
+function main() {
     const canvas = document.querySelector("#glCanvas");
     const gl = canvas.getContext("webgl2");
 
@@ -40,58 +36,74 @@ window.onload = function init() {
     
     // DRAW TRIANGLES OF NINJA STAR
     ninjaStarTriangle(); 
-    
     const triangleShader = initShaderProgram(gl, triangleVertexShader, triangleFragmentShader);
     const triangleBuffer = gl.createBuffer();
-    gl.useProgram(triangleShader);
-    
-    // SCALING TRIANGLES
-
-    var u_matrix = gl.getUniformLocation(triangleShader, 'u_matrix');
-    gl.uniformMatrix4fv(u_matrix, false, xformMatrix);
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ninjaStarData), gl.STATIC_DRAW);
-    
-    // TRIANGLE POSITIONS
-    var numOfComponents = 2;        // x and y (2d)
-    var offset = 0;
     gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, "a_position"));
-    gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, "a_position"),
+    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, "a_color"));
+    var triangleMatrix = gl.getUniformLocation(triangleShader, 'u_matrix');
+    
+    // DRAW CIRCLES OF NINJA STAR
+    ninjaStarCircle();
+    const circleShader = initShaderProgram(gl, circleVertexShader, circleFragmentShader);
+    const circleBuffer = gl.createBuffer();
+    gl.enableVertexAttribArray(gl.getAttribLocation(circleShader, "a_position"));
+    var circleMatrix = gl.getUniformLocation(circleShader, 'u_matrix');
+    
+    function drawScene () {
+        angleInRadians += 0.01;
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        
+        // MATRICES
+        var rotationMatrix = rotateNinjaStar(angleInRadians);
+        var matrix = matrixMultiply(scaleMatrix, rotationMatrix);
+        
+        // TRIANGLES
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ninjaStarData), gl.STATIC_DRAW);
+    
+        // TRIANGLE POSITIONS
+        var numOfComponents = 2;        // x and y (2d)
+        var offset = 0;
+        gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, "a_position"),
             numOfComponents, type, normalize, stride, offset);
             
-    // TRIANGLE COLORS
-    numOfComponents = 3;
-    offset = triangleVertexNum * 2 * 4;     // each vertex has 2 components
-    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, "a_color"));
-    gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, "a_color"),
-            numOfComponents, type, normalize, stride, offset);
-        
-    // DRAW TRIANGLES
-    offset = 0;
-    gl.drawArrays(gl.TRIANGLES, offset, triangleVertexNum);
+        // TRIANGLE COLORS
+        numOfComponents = 3;
+        offset = triangleVertexNum * 2 * 4;     // each vertex has 2 components
+        gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, "a_color"),
+                numOfComponents, type, normalize, stride, offset);
 
-    // DRAW CIRCLES OF NINJA STAR
-    offset = ninjaStarData.length * 4;
-    ninjaStarCircle();
-    numOfComponents = 2;
-    const circleShader = initShaderProgram(gl, circleVertexShader, circleFragmentShader);
-    var circleBuffer = gl.createBuffer();
-    gl.useProgram(circleShader);
-    
-    // SCALING CIRCLES
-    var u_matrix = gl.getUniformLocation(circleShader, 'u_matrix');
-    gl.uniformMatrix4fv(u_matrix, false, xformMatrix);
-       
-    gl.bindBuffer(gl.ARRAY_BUFFER, circleBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ninjaStarData), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(gl.getAttribLocation(circleShader, "a_position"));
-    gl.vertexAttribPointer(gl.getAttribLocation(circleShader, "a_position"),
-            numOfComponents, type, normalize, stride, offset);
-    
-    for (var i = 0; i < 5; i++) {
-        gl.drawArrays(gl.TRIANGLE_FAN, i * triangleFanNumber + i, triangleFanNumber);
+        // SCALING TRIANGLES
+        gl.useProgram(triangleShader);
+        gl.uniformMatrix3fv(triangleMatrix, false, matrix);
+        
+        // DRAW TRIANGLES
+        offset = 0;
+        gl.drawArrays(gl.TRIANGLES, offset, triangleVertexNum);
+
+        // CIRCLES
+        gl.bindBuffer(gl.ARRAY_BUFFER, circleBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ninjaStarData), gl.STATIC_DRAW);
+        
+        // CIRCLE POSITIONS
+        numOfComponents = 2;
+        offset = (12 * 5) * 4;      // 2 components for positions, 3 for colors
+        gl.vertexAttribPointer(gl.getAttribLocation(circleShader, "a_position"),
+                numOfComponents, type, normalize, stride, 240);
+                
+        // SCALING CIRCLES
+        gl.useProgram(circleShader);
+        gl.uniformMatrix3fv(circleMatrix, false, matrix);
+
+        // DRAW CIRCLES
+        for (var i = 0; i < 5; i++) {
+            gl.drawArrays(gl.TRIANGLE_FAN, i * triangleFanNumber + i, triangleFanNumber);
+        }
+        
+        requestAnimationFrame(drawScene);
     }
+    
+    drawScene();    
 }
 
 function ninjaStarTriangle() {
@@ -148,14 +160,56 @@ function circle(a, b) {
     }
 }
 
-function scale () {
+function scaleNinjaStar(Sx, Sy) {
+    return [
+        Sx, 0.0, 0.0,
+        0.0, Sy, 0.0,
+        0.0, 0.0, 1.0
+    ];
+}
+
+function rotateNinjaStar(angleInRadians) {
+    // rotate about the z-axis
+    var cos = Math.cos(angleInRadians);
+    var sin = Math.sin(angleInRadians);
+    return [
+        cos,-sin, 0.0,
+        sin, cos, 0.0,
+        0.0, 0.0, 1.0];
+}
+
+function changeAlphaOfTriangles () {
     
 }
 
-function rotation () {
-    
+function matrixMultiply(a, b) {
+    var a00 = a[0*3+0];
+    var a01 = a[0*3+1];
+    var a02 = a[0*3+2];
+    var a10 = a[1*3+0];
+    var a11 = a[1*3+1];
+    var a12 = a[1*3+2];
+    var a20 = a[2*3+0];
+    var a21 = a[2*3+1];
+    var a22 = a[2*3+2];
+    var b00 = b[0*3+0];
+    var b01 = b[0*3+1];
+    var b02 = b[0*3+2];
+    var b10 = b[1*3+0];
+    var b11 = b[1*3+1];
+    var b12 = b[1*3+2];
+    var b20 = b[2*3+0];
+    var b21 = b[2*3+1];
+    var b22 = b[2*3+2];
+    return [a00 * b00 + a01 * b10 + a02 * b20,
+            a00 * b01 + a01 * b11 + a02 * b21,
+            a00 * b02 + a01 * b12 + a02 * b22,
+            a10 * b00 + a11 * b10 + a12 * b20,
+            a10 * b01 + a11 * b11 + a12 * b21,
+            a10 * b02 + a11 * b12 + a12 * b22,
+            a20 * b00 + a21 * b10 + a22 * b20,
+            a20 * b01 + a21 * b11 + a22 * b21,
+            a20 * b02 + a21 * b12 + a22 * b22];
 }
 
-function alpha () {
-    
-}
+main();
