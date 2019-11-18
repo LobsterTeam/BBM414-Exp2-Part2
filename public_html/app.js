@@ -12,14 +12,15 @@ const triangleVertexNum = 12;
 const triangleFanNumber = 360;
 const gray = vec3(64 / 255.0, 64 / 255.0, 64 / 255.0);
 const Sx = 0.5, Sy = 0.5;
+const scaleMatrix = scaleMatrixOfNinjaStar(0.5, 0.5);
+const fourtyFiveDegreesInRadians = 45 * Math.PI / 180;
+const minDegreeInRadians = 0.01 * Math.PI / 180;
+const initialSpeed = 2;
 var ninjaStarData = [];
 var angleInRadians = 0;
-var scaleMatrix = scaleNinjaStar(0.5, 0.5);
+var speed = initialSpeed;
 var turnRight = true;
-var fourtyFiveDegreesInRadians = 45 * Math.PI / 180;
-var minDegreeInRadians = 0.01 * Math.PI / 180;
 var startRotation = false;
-var speed = 2;
 var changeColor = false;
 
 function main() {
@@ -44,21 +45,21 @@ function main() {
     ninjaStarTriangle(); 
     const triangleShader = initShaderProgram(gl, triangleVertexShader, triangleFragmentShader);
     const triangleBuffer = gl.createBuffer();
-    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, "a_position"));
-    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, "a_color"));
-    var triangleMatrix = gl.getUniformLocation(triangleShader, 'u_matrix');
+    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'a_position'));
+    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'a_color'));
+    var trianglePositionMatrix = gl.getUniformLocation(triangleShader, 'u_position_matrix');
+    var triangleColorMatrix = gl.getUniformLocation(triangleShader, 'u_color_matrix');
     
     // DRAW CIRCLES OF NINJA STAR
     ninjaStarCircle();
     const circleShader = initShaderProgram(gl, circleVertexShader, circleFragmentShader);
     const circleBuffer = gl.createBuffer();
-    gl.enableVertexAttribArray(gl.getAttribLocation(circleShader, "a_position"));
+    gl.enableVertexAttribArray(gl.getAttribLocation(circleShader, 'a_position'));
     var circleMatrix = gl.getUniformLocation(circleShader, 'u_matrix');
     
     // ROTATION ANIMATION
     function drawScene () {
         
-               
         if (angleInRadians >= fourtyFiveDegreesInRadians) {        // 45
             turnRight = false;
         } else if (angleInRadians <= (-1 * fourtyFiveDegreesInRadians)) {     // -45
@@ -71,15 +72,13 @@ function main() {
             angleInRadians -= minDegreeInRadians * speed;
         }
         
-        console.log(angleInRadians);
-        
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        
         // MATRICES
-        var rotationMatrix = rotateNinjaStar(angleInRadians);
+        var rotationMatrix = rotationMatrixOfNinjaStar(angleInRadians);
         var matrix = multiplyMatrices(scaleMatrix, rotationMatrix);
+        var colorMatrix = colorMatrixOfNinjaStar(angleInRadians);
         
         // TRIANGLES
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ninjaStarData), gl.STATIC_DRAW);
     
@@ -97,7 +96,8 @@ function main() {
 
         // SCALING TRIANGLES
         gl.useProgram(triangleShader);
-        gl.uniformMatrix3fv(triangleMatrix, false, matrix);
+        gl.uniformMatrix3fv(trianglePositionMatrix, false, matrix);
+        gl.uniformMatrix3fv(triangleColorMatrix, false, colorMatrix);
         
         // DRAW TRIANGLES
         offset = 0;
@@ -130,49 +130,58 @@ function main() {
     
     document.addEventListener('keydown', function(event) {
     
-    switch(event.keyCode) {
-        case 49:        // key 1
-        case 97:        // numpad 1
-            // first
-            startRotation = false;
-            angleInRadians = 0;
-            speed = 2;
-            break;
-        case 50:        // key 2
-        case 98:        // numpad 2
-            // rotate
-            startRotation = true;
-            turnRight = true;
-            drawScene();
-
-            break;
-            
-        case 51:        // key 3
-        case 99:        // numpad 3
-            startRotation = true;
-            turnRight = true;
-            drawScene();
-            
-            break;
-            
-        case 38:        // arrow up
-            if (speed < 257 && startRotation)
-                speed *= 2;
-            //console.log(speed);
-            break;
-        case 40:        // arrow down
-            if (speed > 3 && startRotation)
-                speed /= 2;
-            //console.log(speed);
-            break;
-        default:
-            break;
-    }
-
-});
-
-    
-    
+        switch(event.keyCode) {
+            // KEY 1 and NUMPAD 1 - INITIAL POSITION
+            case 49:        // key 1
+            case 97:        // numpad 1
+                startRotation = false;
+                angleInRadians = 0;
+                speed = initialSpeed;
+                break;
+            // KEY 2 and NUMPAD 2 - ROTATE
+            case 50:        // key 2
+            case 98:        // numpad 2
+                if (changeColor == true) {
+                    // rotating and changing colors
+                    changeColor = false;
+                } else if (startRotation == false) {
+                    // not rotating
+                    changeColor = false;
+                    startRotation = true;
+                    turnRight = true;
+                    drawScene();
+                }
+                break;
+            // KEY 3 and NUMPAD 3 - ROTATE and CHANGE 
+            case 51:        // key 3
+            case 99:        // numpad 3
+                if (startRotation == true && changeColor == false) {
+                    // rotating but not changing color
+                    changeColor = true;
+                } else if (startRotation == false) {
+                    // not rotating
+                    changeColor = true;
+                    startRotation = true;
+                    turnRight = true;
+                    drawScene();
+                }
+                break;
+            case 38:        // arrow up
+                if (speed < (Math.pow(2, 8) + 1) && startRotation) {
+                    speed *= 2;
+                }
+                //console.log(speed);
+                break;
+            case 40:        // arrow down
+                if (speed > (Math.pow(2, 1) + 1) && startRotation) {
+                    speed /= 2;
+                }
+                //console.log(speed);
+                break;
+            default:
+                break;
+        }
+    });
 }
 
 function ninjaStarTriangle() {
@@ -229,7 +238,7 @@ function circle(a, b) {
     }
 }
 
-function scaleNinjaStar(Sx, Sy) {
+function scaleMatrixOfNinjaStar(Sx, Sy) {
     return [
         Sx, 0.0, 0.0,
         0.0, Sy, 0.0,
@@ -237,7 +246,7 @@ function scaleNinjaStar(Sx, Sy) {
     ];
 }
 
-function rotateNinjaStar(angleInRadians) {
+function rotationMatrixOfNinjaStar(angleInRadians) {
     // rotate about the z-axis
     var cos = Math.cos(angleInRadians);
     var sin = Math.sin(angleInRadians);
@@ -247,8 +256,19 @@ function rotateNinjaStar(angleInRadians) {
         0.0, 0.0, 1.0];
 }
 
-function changeAlphaOfTriangles () {
+function colorMatrixOfNinjaStar () {
+    var component;
+    if (changeColor) {
+        var cos = Math.cos(angleInRadians);
+        component = Math.pow((1/cos), 2);
+    } else {
+        component = 1;      // original color
+    }
     
+    return [
+        component, 0.0, 0.0,
+        0.0, component, 0.0,
+        0.0, 0.0, 1.0];
 }
 
 function multiplyMatrices(a, b) {
@@ -280,7 +300,5 @@ function multiplyMatrices(a, b) {
             a20 * b01 + a21 * b11 + a22 * b21,
             a20 * b02 + a21 * b12 + a22 * b22];
 }
-
-
 
 main();
