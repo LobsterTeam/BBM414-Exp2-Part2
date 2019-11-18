@@ -13,7 +13,7 @@ const triangleVertexShader = `#version 300 es
     uniform mat3 u_matrix;
 
     void main() {
-        gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
+        gl_Position = vec4((u_matrix * vec3(a_position, 1)), 1);
         color = a_color;
     }
 `;

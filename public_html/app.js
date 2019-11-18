@@ -16,6 +16,11 @@ var ninjaStarData = [];
 var angleInRadians = 0;
 var scaleMatrix = scaleNinjaStar(0.5, 0.5);
 var turnRight = true;
+var fourtyFiveDegreesInRadians = 45 * Math.PI / 180;
+var minDegreeInRadians = 0.01 * Math.PI / 180;
+var startRotation = false;
+var speed = 2;
+var changeColor = false;
 
 function main() {
     const canvas = document.querySelector("#glCanvas");
@@ -52,21 +57,21 @@ function main() {
     
     // ROTATION ANIMATION
     function drawScene () {
-        console.log(angleInRadians);
+        
                
-        if (angleInRadians >= 0.78539816) {        // it is supposed to be 45
+        if (angleInRadians >= fourtyFiveDegreesInRadians) {        // 45
             turnRight = false;
-            console.log("FALSE");
-        } else if (angleInRadians <= -0.78539816) {     // it is supposed to be -45
+        } else if (angleInRadians <= (-1 * fourtyFiveDegreesInRadians)) {     // -45
             turnRight = true;
-            console.log("TRUE");
         }
         
         if (turnRight) {
-            angleInRadians += 0.01;
+            angleInRadians += minDegreeInRadians * speed;
         } else {
-            angleInRadians -= 0.01;
+            angleInRadians -= minDegreeInRadians * speed;
         }
+        
+        console.log(angleInRadians);
         
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         
@@ -116,11 +121,58 @@ function main() {
         for (var i = 0; i < 5; i++) {
             gl.drawArrays(gl.TRIANGLE_FAN, i * triangleFanNumber + i, triangleFanNumber);
         }
-        
-        requestAnimationFrame(drawScene);
+        if (startRotation) {
+            requestAnimationFrame(drawScene);
+        }
     }
     
-    drawScene();    
+    drawScene();
+    
+    document.addEventListener('keydown', function(event) {
+    
+    switch(event.keyCode) {
+        case 49:        // key 1
+        case 97:        // numpad 1
+            // first
+            startRotation = false;
+            angleInRadians = 0;
+            speed = 2;
+            break;
+        case 50:        // key 2
+        case 98:        // numpad 2
+            // rotate
+            startRotation = true;
+            turnRight = true;
+            drawScene();
+
+            break;
+            
+        case 51:        // key 3
+        case 99:        // numpad 3
+            startRotation = true;
+            turnRight = true;
+            drawScene();
+            
+            break;
+            
+        case 38:        // arrow up
+            if (speed < 257 && startRotation)
+                speed *= 2;
+            //console.log(speed);
+            break;
+        case 40:        // arrow down
+            if (speed > 3 && startRotation)
+                speed /= 2;
+            //console.log(speed);
+            break;
+        default:
+            break;
+    }
+
+});
+
+    
+    
 }
 
 function ninjaStarTriangle() {
@@ -228,5 +280,7 @@ function multiplyMatrices(a, b) {
             a20 * b01 + a21 * b11 + a22 * b21,
             a20 * b02 + a21 * b12 + a22 * b22];
 }
+
+
 
 main();
