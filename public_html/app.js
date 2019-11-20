@@ -12,16 +12,15 @@ const triangleVertexNum = 12;
 const triangleFanNumber = 360;
 const gray = vec3(64 / 255.0, 64 / 255.0, 64 / 255.0);
 const Sx = 0.5, Sy = 0.5;
-const scaleMatrix = scaleMatrixOfNinjaStar(0.5, 0.5);
 const fourtyFiveDegreesInRadians = 45 * Math.PI / 180;
-const minDegreeInRadians = 0.01 * Math.PI / 180;
-const initialSpeed = 2;
+const minDegreeInRadians = Math.PI / 180;
+const initialSpeed = 1;
 var ninjaStarData = [];
 var angleInRadians = 0;
 var speed = initialSpeed;
 var turnRight = true;
 var startRotation = false;
-var changeColor = false;
+var changeColor = 0.0;
 
 function main() {
     const canvas = document.querySelector("#glCanvas");
@@ -45,17 +44,19 @@ function main() {
     ninjaStarTriangle(); 
     const triangleShader = initShaderProgram(gl, triangleVertexShader, triangleFragmentShader);
     const triangleBuffer = gl.createBuffer();
-    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'a_position'));
-    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'a_color'));
-    var trianglePositionMatrix = gl.getUniformLocation(triangleShader, 'u_position_matrix');
-    var triangleColorMatrix = gl.getUniformLocation(triangleShader, 'u_color_matrix');
+    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'i_position'));
+    gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'i_color'));
+    
+    var triangleRotateAngle = gl.getUniformLocation(triangleShader, 'u_rotate_angle');
+    var triangleChangeColor = gl.getUniformLocation(triangleShader, 'i_change_color');
+    //var triangleColorMatrix = gl.getUniformLocation(triangleShader, 'u_color_matrix');
     
     // DRAW CIRCLES OF NINJA STAR
     ninjaStarCircle();
     const circleShader = initShaderProgram(gl, circleVertexShader, circleFragmentShader);
     const circleBuffer = gl.createBuffer();
-    gl.enableVertexAttribArray(gl.getAttribLocation(circleShader, 'a_position'));
-    var circleMatrix = gl.getUniformLocation(circleShader, 'u_matrix');
+    gl.enableVertexAttribArray(gl.getAttribLocation(circleShader, 'i_position'));
+    var circleRotateAngle = gl.getUniformLocation(circleShader, 'u_rotate_angle');
     
     // ROTATION ANIMATION
     function drawScene () {
@@ -73,9 +74,8 @@ function main() {
         }
         
         // MATRICES
-        var rotationMatrix = rotationMatrixOfNinjaStar(angleInRadians);
-        var matrix = multiplyMatrices(scaleMatrix, rotationMatrix);
-        var colorMatrix = colorMatrixOfNinjaStar(angleInRadians);
+        //var rotationMatrix = rotationMatrixOfNinjaStar(angleInRadians);
+        //var colorMatrix = colorMatrixOfNinjaStar(angleInRadians);
         
         // TRIANGLES
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -85,19 +85,21 @@ function main() {
         // TRIANGLE POSITIONS
         var numOfComponents = 2;        // x and y (2d)
         var offset = 0;
-        gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, "a_position"),
+        gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, 'i_position'),
             numOfComponents, type, normalize, stride, offset);
             
         // TRIANGLE COLORS
         numOfComponents = 3;
         offset = triangleVertexNum * 2 * 4;     // each vertex has 2 components
-        gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, "a_color"),
+        gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, 'i_color'),
                 numOfComponents, type, normalize, stride, offset);
 
         // SCALING TRIANGLES
         gl.useProgram(triangleShader);
-        gl.uniformMatrix3fv(trianglePositionMatrix, false, matrix);
-        gl.uniformMatrix3fv(triangleColorMatrix, false, colorMatrix);
+        gl.uniform1f(triangleRotateAngle, angleInRadians);
+        gl.uniform1f(triangleChangeColor, changeColor);
+        //gl.uniformMatrix3fv(trianglePositionMatrix, false, rotationMatrix);
+        //gl.uniformMatrix3fv(triangleColorMatrix, false, colorMatrix);
         
         // DRAW TRIANGLES
         offset = 0;
@@ -110,12 +112,12 @@ function main() {
         // CIRCLE POSITIONS
         numOfComponents = 2;
         offset = (12 * 5) * 4;      // 2 components for positions, 3 for colors
-        gl.vertexAttribPointer(gl.getAttribLocation(circleShader, "a_position"),
+        gl.vertexAttribPointer(gl.getAttribLocation(circleShader, 'i_position'),
                 numOfComponents, type, normalize, stride, 240);
                 
         // SCALING CIRCLES
         gl.useProgram(circleShader);
-        gl.uniformMatrix3fv(circleMatrix, false, matrix);
+        gl.uniform1f(circleRotateAngle, angleInRadians);
 
         // DRAW CIRCLES
         for (var i = 0; i < 5; i++) {
@@ -141,12 +143,12 @@ function main() {
             // KEY 2 and NUMPAD 2 - ROTATE
             case 50:        // key 2
             case 98:        // numpad 2
-                if (changeColor == true) {
+                if (changeColor == 1.0) {
                     // rotating and changing colors
-                    changeColor = false;
+                    changeColor = 0.0;
                 } else if (startRotation == false) {
                     // not rotating
-                    changeColor = false;
+                    changeColor = 0.0;
                     startRotation = true;
                     turnRight = true;
                     drawScene();
@@ -155,26 +157,28 @@ function main() {
             // KEY 3 and NUMPAD 3 - ROTATE and CHANGE 
             case 51:        // key 3
             case 99:        // numpad 3
-                if (startRotation == true && changeColor == false) {
+                if (startRotation == true && changeColor == 0.0) {
                     // rotating but not changing color
-                    changeColor = true;
+                    changeColor = 1.0;
                 } else if (startRotation == false) {
                     // not rotating
-                    changeColor = true;
+                    changeColor = 1.0;
                     startRotation = true;
                     turnRight = true;
                     drawScene();
                 }
                 break;
             case 38:        // arrow up
-                if (speed < (Math.pow(2, 8) + 1) && startRotation) {
-                    speed *= 2;
+                if (speed < 10 && startRotation) {
+                    speed += 1;
+                    console.log(speed);
                 }
                 //console.log(speed);
                 break;
             case 40:        // arrow down
-                if (speed > (Math.pow(2, 1) + 1) && startRotation) {
-                    speed /= 2;
+                if (speed > 1 && startRotation) {
+                    speed -= 1;
+                    console.log(speed);
                 }
                 //console.log(speed);
                 break;
@@ -186,30 +190,30 @@ function main() {
 
 function ninjaStarTriangle() {
     var circlePositions = [
-        vec2(-1, 1),
-        vec2(1 / 3, 1 / 3),
-        vec2(-1 / 3, -1 / 3)
+        vec2(-1 / 2, 1 / 2),
+        vec2(1 / 6, 1 / 6),
+        vec2(-1 / 6, -1 / 6)
     ];
     ninjaStarData = ninjaStarData.concat(circlePositions[0], circlePositions[1], circlePositions[2]);
 
     var circlePositions = [
-        vec2(-1, -1),
-        vec2(-1 / 3, 1 / 3),
-        vec2(1 / 3, -1 / 3)
+        vec2(-1 / 2, -1 / 2),
+        vec2(-1 / 6, 1 / 6),
+        vec2(1 / 6, -1 / 6)
     ];
     ninjaStarData = ninjaStarData.concat(circlePositions[0], circlePositions[1], circlePositions[2]);
 
     var circlePositions = [
-        vec2(1, -1),
-        vec2(1 / 3, 1 / 3),
-        vec2(-1 / 3, -1 / 3)
+        vec2(1 / 2, -1 / 2),
+        vec2(1 / 6, 1 / 6),
+        vec2(-1 / 6, -1 / 6)
     ];
     ninjaStarData = ninjaStarData.concat(circlePositions[0], circlePositions[1], circlePositions[2]);
 
     var circlePositions = [
-        vec2(1, 1),
-        vec2(-1 / 3, 1 / 3),
-        vec2(1 / 3, -1 / 3)
+        vec2(1 / 2, 1 / 2),
+        vec2(-1 / 6, 1 / 6),
+        vec2(1 / 6, -1 / 6)
     ];
     ninjaStarData = ninjaStarData.concat(circlePositions[0], circlePositions[1], circlePositions[2]);
     
@@ -221,15 +225,15 @@ function ninjaStarTriangle() {
 
 function ninjaStarCircle() {
     circle(0, 0);
-    circle(0, 1 / 2);
-    circle(-1 / 2, 0);
-    circle(0, -1 / 2);
-    circle(1 / 2, 0);
+    circle(0, 1 / 4);
+    circle(-1 / 4, 0);
+    circle(0, -1 / 4);
+    circle(1 / 4, 0);
 }
 
 function circle(a, b) {
     var origin = [a, b];
-    var r = 0.1;
+    var r = 0.05;
 
     for (var i = 0; i <= triangleFanNumber; i += 1) {
         var j = i * Math.PI / 180;
@@ -238,6 +242,7 @@ function circle(a, b) {
     }
 }
 
+// not used
 function scaleMatrixOfNinjaStar(Sx, Sy) {
     return [
         Sx, 0.0, 0.0,
@@ -246,6 +251,7 @@ function scaleMatrixOfNinjaStar(Sx, Sy) {
     ];
 }
 
+// not used
 function rotationMatrixOfNinjaStar(angleInRadians) {
     // rotate about the z-axis
     var cos = Math.cos(angleInRadians);
