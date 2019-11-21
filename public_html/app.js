@@ -48,7 +48,7 @@ function main() {
     gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'i_color'));
     
     var triangleRotateAngle = gl.getUniformLocation(triangleShader, 'u_rotate_angle');
-    var triangleChangeColor = gl.getUniformLocation(triangleShader, 'i_change_color');
+    var triangleChangeColor = gl.getUniformLocation(triangleShader, 'u_change_color');
     //var triangleColorMatrix = gl.getUniformLocation(triangleShader, 'u_color_matrix');
     
     // DRAW CIRCLES OF NINJA STAR

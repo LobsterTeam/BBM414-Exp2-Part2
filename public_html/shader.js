@@ -8,26 +8,26 @@ const triangleVertexShader = `#version 300 es
 
     in vec2 i_position;
     in vec3 i_color;
-    in float i_change_color;
 
     out vec3 color;
     out float change_color;
     out float rotate_angle;
-
+    
+    uniform float u_change_color;
     uniform float u_rotate_angle;
 
     void main() {
 
         vec2 u_position = vec2(0.0,0.0);
-        float sin1 = cos(u_rotate_angle);
-        float cos1 = sin(u_rotate_angle);
+        float sin_value = cos(u_rotate_angle);
+        float cos_value = sin(u_rotate_angle);
 
-        u_position.x = (cos1 * i_position.x) - (sin1 * i_position.y);
-        u_position.y = (cos1 * i_position.y) + (sin1 * i_position.x);
+        u_position.x = (cos_value * i_position.x) - (sin_value * i_position.y);
+        u_position.y = (cos_value * i_position.y) + (sin_value * i_position.x);
 
         gl_Position = vec4(u_position.x, u_position.y, 0.0, 1.0); 
         color = i_color;
-        change_color = i_change_color;
+        change_color = u_change_color;
         rotate_angle = u_rotate_angle;
     }
 `;
@@ -43,16 +43,18 @@ const triangleFragmentShader = `#version 300 es
     
     void main() {
 
-        vec3 oo_color = vec3(0.0, 0.0, 0.0);
         float component;
-        float cos1 = cos(rotate_angle);
-        component = pow(cos1, -2.0);
-
-        oo_color.x = component * color.x;
-        oo_color.y = component * color.y;
-        oo_color.z = color.z;
-        
-        o_color = vec4(oo_color, 1.0);
+        if (change_color == 1.0) {       // 3
+            float sin_value = sin(rotate_angle);
+            component = abs(sin_value);
+            
+        } else {        // 2
+            component = 1.0;
+        }
+        o_color.x = component * color.x;
+        o_color.y = component * color.y;
+        o_color.z = component * color.z;
+        o_color.w = 1.0;
     }
 `;
 
@@ -64,11 +66,11 @@ const circleVertexShader = `#version 300 es
 
     void main() {
         vec2 u_position = vec2(0.0,0.0);
-        float sin1 = cos(u_rotate_angle);
-        float cos1 = sin(u_rotate_angle);
+        float sin_value = cos(u_rotate_angle);
+        float cos_value = sin(u_rotate_angle);
 
-        u_position.x = (cos1 * i_position.x) - (sin1 * i_position.y);
-        u_position.y = (cos1 * i_position.y) + (sin1 * i_position.x);
+        u_position.x = (cos_value * i_position.x) - (sin_value * i_position.y);
+        u_position.y = (cos_value * i_position.y) + (sin_value * i_position.x);
         
         gl_Position = vec4(u_position.x, u_position.y, 0.0, 1.0);
     }
