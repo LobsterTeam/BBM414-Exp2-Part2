@@ -96,6 +96,7 @@ function main() {
 
         // SCALING TRIANGLES
         gl.useProgram(triangleShader);
+        console.log(Math.abs(Math.sin(angleInRadians)));
         gl.uniform1f(triangleRotateAngle, angleInRadians);
         gl.uniform1f(triangleChangeColor, changeColor);
         //gl.uniformMatrix3fv(trianglePositionMatrix, false, rotationMatrix);

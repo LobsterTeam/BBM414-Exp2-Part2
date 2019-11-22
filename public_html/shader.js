@@ -46,14 +46,14 @@ const triangleFragmentShader = `#version 300 es
         float component;
         if (change_color == 1.0) {       // 3
             float sin_value = sin(rotate_angle);
-            component = abs(sin_value);
+            component = 1.0 +  abs(sin_value);
             
         } else {        // 2
             component = 1.0;
         }
         o_color.x = component * color.x;
         o_color.y = component * color.y;
-        o_color.z = component * color.z;
+        o_color.z = color.z;
         o_color.w = 1.0;
     }
 `;
