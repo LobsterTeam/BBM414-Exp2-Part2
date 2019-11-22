@@ -46,10 +46,8 @@ function main() {
     const triangleBuffer = gl.createBuffer();
     gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'i_position'));
     gl.enableVertexAttribArray(gl.getAttribLocation(triangleShader, 'i_color'));
-    
     var triangleRotateAngle = gl.getUniformLocation(triangleShader, 'u_rotate_angle');
     var triangleChangeColor = gl.getUniformLocation(triangleShader, 'u_change_color');
-    //var triangleColorMatrix = gl.getUniformLocation(triangleShader, 'u_color_matrix');
     
     // DRAW CIRCLES OF NINJA STAR
     ninjaStarCircle();
@@ -73,10 +71,6 @@ function main() {
             angleInRadians -= minDegreeInRadians * speed;
         }
         
-        // MATRICES
-        //var rotationMatrix = rotationMatrixOfNinjaStar(angleInRadians);
-        //var colorMatrix = colorMatrixOfNinjaStar(angleInRadians);
-        
         // TRIANGLES
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
@@ -94,13 +88,10 @@ function main() {
         gl.vertexAttribPointer(gl.getAttribLocation(triangleShader, 'i_color'),
                 numOfComponents, type, normalize, stride, offset);
 
-        // SCALING TRIANGLES
+        // ROTATING TRIANGLES
         gl.useProgram(triangleShader);
-        console.log(Math.abs(Math.sin(angleInRadians)));
         gl.uniform1f(triangleRotateAngle, angleInRadians);
         gl.uniform1f(triangleChangeColor, changeColor);
-        //gl.uniformMatrix3fv(trianglePositionMatrix, false, rotationMatrix);
-        //gl.uniformMatrix3fv(triangleColorMatrix, false, colorMatrix);
         
         // DRAW TRIANGLES
         offset = 0;
@@ -116,7 +107,7 @@ function main() {
         gl.vertexAttribPointer(gl.getAttribLocation(circleShader, 'i_position'),
                 numOfComponents, type, normalize, stride, 240);
                 
-        // SCALING CIRCLES
+        // ROTATING CIRCLES
         gl.useProgram(circleShader);
         gl.uniform1f(circleRotateAngle, angleInRadians);
 
@@ -124,6 +115,8 @@ function main() {
         for (var i = 0; i < 5; i++) {
             gl.drawArrays(gl.TRIANGLE_FAN, i * triangleFanNumber + i, triangleFanNumber);
         }
+        
+        // animate on 2 and 3
         if (startRotation) {
             requestAnimationFrame(drawScene);
         }
@@ -170,18 +163,20 @@ function main() {
                 }
                 break;
             case 38:        // arrow up
-                if (speed < 10 && startRotation) {
+                if (speed < 1 && startRotation) {   // speed smaller than 1
+                    speed *= 2;
+                } else if (speed < 10 && startRotation) {   // speed between 1 and 10
                     speed += 1;
-                    console.log(speed);
                 }
-                //console.log(speed);
+                console.log(speed);
                 break;
             case 40:        // arrow down
-                if (speed > 1 && startRotation) {
+                if (speed > 1 && startRotation) {       // speed greater than 1
                     speed -= 1;
-                    console.log(speed);
+                } else if (startRotation) {     // go to infinity
+                    speed /= 2;
                 }
-                //console.log(speed);
+                console.log(speed);
                 break;
             default:
                 break;
@@ -263,6 +258,7 @@ function rotationMatrixOfNinjaStar(angleInRadians) {
         0.0, 0.0, 1.0];
 }
 
+// not used
 function colorMatrixOfNinjaStar () {
     var component;
     if (changeColor) {
