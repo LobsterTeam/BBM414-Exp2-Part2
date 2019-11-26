@@ -57,7 +57,7 @@ function main() {
     var circleRotateAngle = gl.getUniformLocation(circleShader, 'u_rotate_angle');
     
     // ROTATION ANIMATION
-    function drawScene () {
+    function render () {
         
         if (angleInRadians >= fourtyFiveDegreesInRadians) {        // 45
             turnRight = false;
@@ -118,11 +118,11 @@ function main() {
         
         // animate on 2 and 3
         if (startRotation) {
-            requestAnimationFrame(drawScene);
+            requestAnimationFrame(render);
         }
     }
     
-    drawScene();
+    render();
     
     document.addEventListener('keydown', function(event) {
     
@@ -131,6 +131,7 @@ function main() {
             case 49:        // key 1
             case 97:        // numpad 1
                 startRotation = false;
+                changeColor = 0.0;
                 angleInRadians = 0;
                 speed = initialSpeed;
                 break;
@@ -145,7 +146,7 @@ function main() {
                     changeColor = 0.0;
                     startRotation = true;
                     turnRight = true;
-                    drawScene();
+                    render();
                 }
                 break;
             // KEY 3 and NUMPAD 3 - ROTATE and CHANGE 
@@ -159,7 +160,7 @@ function main() {
                     changeColor = 1.0;
                     startRotation = true;
                     turnRight = true;
-                    drawScene();
+                    render();
                 }
                 break;
             case 38:        // arrow up
@@ -185,33 +186,33 @@ function main() {
 }
 
 function ninjaStarTriangle() {
-    var circlePositions = [
+    var trianglePositions = [
         vec2(-1 / 2, 1 / 2),
         vec2(1 / 6, 1 / 6),
         vec2(-1 / 6, -1 / 6)
     ];
-    ninjaStarData = ninjaStarData.concat(circlePositions[0], circlePositions[1], circlePositions[2]);
+    ninjaStarData = ninjaStarData.concat(trianglePositions[0], trianglePositions[1], trianglePositions[2]);
 
-    var circlePositions = [
+    trianglePositions = [
         vec2(-1 / 2, -1 / 2),
         vec2(-1 / 6, 1 / 6),
         vec2(1 / 6, -1 / 6)
     ];
-    ninjaStarData = ninjaStarData.concat(circlePositions[0], circlePositions[1], circlePositions[2]);
+    ninjaStarData = ninjaStarData.concat(trianglePositions[0], trianglePositions[1], trianglePositions[2]);
 
-    var circlePositions = [
+    trianglePositions = [
         vec2(1 / 2, -1 / 2),
         vec2(1 / 6, 1 / 6),
         vec2(-1 / 6, -1 / 6)
     ];
-    ninjaStarData = ninjaStarData.concat(circlePositions[0], circlePositions[1], circlePositions[2]);
+    ninjaStarData = ninjaStarData.concat(trianglePositions[0], trianglePositions[1], trianglePositions[2]);
 
-    var circlePositions = [
+    trianglePositions = [
         vec2(1 / 2, 1 / 2),
         vec2(-1 / 6, 1 / 6),
         vec2(1 / 6, -1 / 6)
     ];
-    ninjaStarData = ninjaStarData.concat(circlePositions[0], circlePositions[1], circlePositions[2]);
+    ninjaStarData = ninjaStarData.concat(trianglePositions[0], trianglePositions[1], trianglePositions[2]);
     
     // append grays
     for (var i = 0; i < triangleVertexNum; i++) {
@@ -236,72 +237,6 @@ function circle(a, b) {
         var vert = [r * Math.sin(j) + a, r * Math.cos(j) + b];
         ninjaStarData.push(vert[0], vert[1]);
     }
-}
-
-// not used
-function scaleMatrixOfNinjaStar(Sx, Sy) {
-    return [
-        Sx, 0.0, 0.0,
-        0.0, Sy, 0.0,
-        0.0, 0.0, 1.0
-    ];
-}
-
-// not used
-function rotationMatrixOfNinjaStar(angleInRadians) {
-    // rotate about the z-axis
-    var cos = Math.cos(angleInRadians);
-    var sin = Math.sin(angleInRadians);
-    return [
-        cos,-sin, 0.0,
-        sin, cos, 0.0,
-        0.0, 0.0, 1.0];
-}
-
-// not used
-function colorMatrixOfNinjaStar () {
-    var component;
-    if (changeColor) {
-        var cos = Math.cos(angleInRadians);
-        component = Math.pow((1/cos), 2);
-    } else {
-        component = 1;      // original color
-    }
-    
-    return [
-        component, 0.0, 0.0,
-        0.0, component, 0.0,
-        0.0, 0.0, 1.0];
-}
-
-function multiplyMatrices(a, b) {
-    var a00 = a[0*3+0];
-    var a01 = a[0*3+1];
-    var a02 = a[0*3+2];
-    var a10 = a[1*3+0];
-    var a11 = a[1*3+1];
-    var a12 = a[1*3+2];
-    var a20 = a[2*3+0];
-    var a21 = a[2*3+1];
-    var a22 = a[2*3+2];
-    var b00 = b[0*3+0];
-    var b01 = b[0*3+1];
-    var b02 = b[0*3+2];
-    var b10 = b[1*3+0];
-    var b11 = b[1*3+1];
-    var b12 = b[1*3+2];
-    var b20 = b[2*3+0];
-    var b21 = b[2*3+1];
-    var b22 = b[2*3+2];
-    return [a00 * b00 + a01 * b10 + a02 * b20,
-            a00 * b01 + a01 * b11 + a02 * b21,
-            a00 * b02 + a01 * b12 + a02 * b22,
-            a10 * b00 + a11 * b10 + a12 * b20,
-            a10 * b01 + a11 * b11 + a12 * b21,
-            a10 * b02 + a11 * b12 + a12 * b22,
-            a20 * b00 + a21 * b10 + a22 * b20,
-            a20 * b01 + a21 * b11 + a22 * b21,
-            a20 * b02 + a21 * b12 + a22 * b22];
 }
 
 main();
